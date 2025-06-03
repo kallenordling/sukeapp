@@ -12,7 +12,7 @@ DATABASE_URL = "postgresql://suke:atiavrak9a@localhost/divedb"
 
 
 app = Flask(__name__, template_folder='./templates')
-UPLOAD_FOLDER = '/var/www/html/suke/uploads'
+UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
