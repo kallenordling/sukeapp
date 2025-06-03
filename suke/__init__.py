@@ -8,8 +8,8 @@ from geoalchemy2 import Geography
 import numpy
 import logging
 import sys
-DATABASE_URL = "postgresql://suke:atiavrak9a@localhost/divedb"
 
+DATABASE_URL = postgres://<user>:<password>@<host>/<database>
 
 app = Flask(__name__, template_folder='./templates')
 UPLOAD_FOLDER = './uploads'
