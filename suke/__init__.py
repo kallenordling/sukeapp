@@ -8,12 +8,11 @@ from geoalchemy2 import Geography
 import numpy
 import logging
 import sys
-user=os.environ.get("user")
-password=os.environ.get("password")
-host=os.environ.get("host")
-database=os.environ.get("database")
-DATABASE_URL =os.environ.get("DATABASE_URL")
+
+
 app = Flask(__name__, template_folder='./templates')
+
+DATABASE_URL =os.environ.get("DATABASE_URL")
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -114,5 +113,4 @@ def create_dive_site():
 		return jsonify({'success': False, 'error': str(e)}), 500
  
 
-if __name__ == '__main__':
-	app.run(debug=True)
+
