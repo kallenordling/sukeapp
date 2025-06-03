@@ -9,8 +9,10 @@ import numpy
 import logging
 import sys
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_DIR = os.path.join(BASE_DIR, '..', 'templates')
 
-app = Flask(__name__, template_folder='./templates')
+app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 DATABASE_URL =os.environ.get("DATABASE_URL")
 UPLOAD_FOLDER = './uploads'
