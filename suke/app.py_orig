@@ -1,0 +1,44 @@
+from flask import Flask, request, render_template, jsonify
+import os
+import pandas as pd
+
+app = Flask(__name__, template_folder='/var/www/html/suke/templates')
+UPLOAD_FOLDER = '/var/www/html/suke/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        app.logger.debug('No file part')
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        app.logger.debug('No selected file')
+        return jsonify({'error': 'No selected file'}), 400
+    coordinates = request.form.get('coordinates')
+    if not coordinates:
+        app.logger.debug('No coordinates provided')
+        return jsonify({'error': 'No coordinates provided'}), 400
+    device = request.form.get('device')
+    if file:
+        if device == 'shearwater':
+           filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+           file.save(filepath)
+           app.logger.debug(f'File saved to {filepath}')
+           df = pd.read_csv(filepath,skiprows=2,usecols=['Water Temp','Depth'])
+           df.to_csv(filepath)
+           # Add coordinates to the DataFrame
+           #df['coordinates'] = coordinates
+           #app.logger.debug(f'DataFrame: {df.head().to_dict(orient="records")}')
+           return jsonify({'succcess':'file upload done'})
+    return jsonify({'error': 'File not uploaded'}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
