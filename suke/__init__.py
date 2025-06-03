@@ -13,7 +13,7 @@ password=os.environ.get("password")
 host=os.environ.get("host")
 database=os.environ.get("database")
 DATABASE_URL = "postgres://"+user+":"+password+"@"+host+"/"+database
-
+print(DATABASE_URL)
 app = Flask(__name__, template_folder='./templates')
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
