@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dive Temperature Profile</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 500px; width: 500px; margin: 0 auto; }
+        body { text-align: center; }
+
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            z-index: 1001; 
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Dive Temperature Profile</h1>
+    <form id="uploadForm" enctype="multipart/form-data" action="/suke/upload" method="post">
+        <label for="deviceSelect">Select Device:</label>
+        <select name="device" id="deviceSelect">
+            <option value="shearwater">Shearwater</option>
+            <option value="suunto">Suunto</option>
+        </select><br><br>
+        <input type="file" name="file" id="fileInput" accept=".csv"><br><br>
+        <label for="siteSelect">Select Dive Site:</label>
+        <select name="site" id="siteSelect">
+            <option value="">--Select a Dive Site--</option>
+        </select><br><br>
+        <input type="hidden" name="coordinates" id="coordinatesInput">
+        <button type="submit">Upload</button>
+    </form>
+    <div id="map"></div>
+
+    <!-- Modal for creating new dive site -->
+    <div id="newSiteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create New Dive Site</h2>
+            <form id="newSiteForm" enctype="multipart/form-data" action="/suke/create_dive_site" method="post">
+                <label for="siteName">Dive Site Name:</label><br>
+                <input type="text" id="siteName" name="siteName" required><br><br>
+                <label for="siteComments">Comments:</label><br>
+                <textarea id="siteComments" name="siteComments"></textarea><br><br>
+                <button type="submit">Create Dive Site</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([64.0, 26.0], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var popup = L.popup();
+        var selectedSiteId = null;
+        var newSiteCoordinates = null;
+
+        function onMapClick(e) {
+            var coordinates = e.latlng.lat + ',' + e.latlng.lng;
+            document.getElementById('coordinatesInput').value = coordinates;
+            newSiteCoordinates = e.latlng;
+            selectedSiteId = null;
+            document.getElementById('siteSelect').value = "";
+            showNewSiteModal();
+        }
+
+        map.on('click', onMapClick);
+
+        document.getElementById('uploadForm').onsubmit = function(event) {
+            event.preventDefault();
+            var formData = new FormData();
+            var fileInput = document.getElementById('fileInput');
+            var coordinatesInput = document.getElementById('coordinatesInput');
+            var deviceSelect = document.getElementById('deviceSelect');
+            var siteSelect = document.getElementById('siteSelect');
+
+            formData.append('file', fileInput.files[0]);
+            formData.append('coordinates', coordinatesInput.value);
+            formData.append('device', deviceSelect.value);
+            formData.append('site', siteSelect.value);
+
+            fetch('/suke/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('File uploaded successfully!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('File upload failed!');
+            });
+        };
+
+        function loadDiveSites() {
+            fetch('/dive_sites')
+                .then(response => response.json())
+                .then(data => {
+                    var siteSelect = document.getElementById('siteSelect');
+                    data.forEach(site => {
+                        var option = document.createElement('option');
+                        option.value = site.id;
+                        option.textContent = site.name;
+                        siteSelect.appendChild(option);
+
+                        var marker = L.marker([site.lat, site.lon]).addTo(map);
+                        marker.bindPopup(site.name);
+                        marker.on('click', function() {
+                            document.getElementById('coordinatesInput').value = site.lat + ',' + site.lon;
+                            selectedSiteId = site.id;
+                            siteSelect.value = site.id;
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDiveSites);
+
+        // Modal handling
+        var modal = document.getElementById('newSiteModal');
+        var span = document.getElementsByClassName('close')[0];
+
+        function showNewSiteModal() {
+            modal.style.display = 'block';
+        }
+
+        span.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        document.getElementById('newSiteForm').onsubmit = function(event) {
+            event.preventDefault();
+            var siteName = document.getElementById('siteName').value;
+            var siteComments = document.getElementById('siteComments').value;
+
+            var newSite = {
+                name: siteName,
+                lat: newSiteCoordinates.lat,
+                lon: newSiteCoordinates.lng,
+                comments: siteComments
+            };
+
+            fetch('/suke/create_dive_site', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newSite)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.error(data)
+                if (data.success) {
+                    var siteSelect = document.getElementById('siteSelect');
+                    var option = document.createElement('option');
+                    option.value = data.site.id;
+                    option.textContent = data.site.name;
+                    siteSelect.appendChild(option);
+                    siteSelect.value = data.site.id;
+                    document.getElementById('coordinatesInput').value = data.site.lat + ',' + data.site.lon;
+
+                    var marker = L.marker([data.site.lat, data.site.lon]).addTo(map);
+                    marker.bindPopup(data.site.name);
+                    marker.on('click', function() {
+                        document.getElementById('coordinatesInput').value = data.site.lat + ',' + data.site.lon;
+                        selectedSiteId = data.site.id;
+                        siteSelect.value = data.site.id;
+                    });
+
+                    modal.style.display = 'none';
+                } else {
+                    alert('Failed to create dive site: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error);
+            });
+        };
+    </script>
+</body>
+</html>
