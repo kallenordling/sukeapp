@@ -12,7 +12,7 @@ user=os.environ.get("user")
 password=os.environ.get("password")
 host=os.environ.get("host")
 database=os.environ.get("database")
-DATABASE_URL =os.environ.get("DATABASE_URL)
+DATABASE_URL =os.environ.get("DATABASE_URL")
 app = Flask(__name__, template_folder='./templates')
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
