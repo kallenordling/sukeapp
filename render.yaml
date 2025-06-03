@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: sukediveapp
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn suke.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sukedb
+          property: connectionString
